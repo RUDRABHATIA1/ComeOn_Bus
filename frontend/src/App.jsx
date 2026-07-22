@@ -18,6 +18,34 @@ function MapController({ center, zoom, bounds }) {
   return null;
 }
 
+// Static icon generators
+const getSimFromIcon = () => {
+  return L.divIcon({
+    className: 'custom-sim-from-marker',
+    html: `
+      <div class="relative flex items-center justify-center w-8 h-8">
+        <span class="absolute inline-flex h-full w-full rounded-full bg-orange-500 opacity-75 animate-ping" style="animation-duration: 1.5s;"></span>
+        <span class="relative inline-flex rounded-full h-4 w-4 bg-orange-500 border-2 border-white shadow-md"></span>
+      </div>
+    `,
+    iconSize: [32, 32],
+    iconAnchor: [16, 16]
+  });
+};
+
+const getSimToIcon = () => {
+  return L.divIcon({
+    className: 'custom-sim-to-marker',
+    html: `
+      <div class="relative flex items-center justify-center w-6 h-6 rounded-full bg-rose-600 border-2 border-white shadow-[0_0_10px_rgba(225,29,72,0.6)]">
+        <div class="w-2 h-2 rounded-full bg-white"></div>
+      </div>
+    `,
+    iconSize: [24, 24],
+    iconAnchor: [12, 12]
+  });
+};
+
 export default function App() {
   const { busesList, isConnected } = useLiveBuses();
   const [routeCoordinates, setRouteCoordinates] = useState([]);
@@ -29,7 +57,7 @@ export default function App() {
   const [mapCenter, setMapCenter] = useState([28.8350, 78.7450]);
   const [mapZoom, setMapZoom] = useState(13);
   const [mapBounds, setMapBounds] = useState(null);
-  const lastFramedBusRef = useRef(null);
+  const lastFramedCityRef = useRef(null);
   const [selectedBus, setSelectedBus] = useState(null);
   const [selectedStop, setSelectedStop] = useState(null);
   const [isLocating, setIsLocating] = useState(false);
@@ -52,6 +80,10 @@ export default function App() {
       }
     }
   }, [busesList, selectedBus]);
+
+  // Memoize icons so Leaflet doesn't destroy and recreate the DOM node (which ruins CSS animations)
+  const simFromIcon = React.useMemo(() => getSimFromIcon(), []);
+  const simToIcon = React.useMemo(() => getSimToIcon(), []);
 
   // Fetch static route coordinates and stops from backend
   useEffect(() => {
@@ -135,6 +167,7 @@ export default function App() {
       async (position) => {
         const { latitude, longitude } = position.coords;
         setUserLocation([latitude, longitude]);
+        setMapBounds(null);
         setMapCenter([latitude, longitude]);
         setMapZoom(14);
 
@@ -144,6 +177,14 @@ export default function App() {
           const data = await res.json();
           setNearestStops(data);
           setIsLocating(false);
+
+          if (data.length > 0) {
+            const bounds = [
+              [latitude, longitude],
+              ...data.map(stop => [stop.location.coordinates[1], stop.location.coordinates[0]])
+            ];
+            setMapBounds(bounds);
+          }
         } catch (err) {
           console.error("Error fetching nearest stops:", err);
           setErrorMessage("Failed to locate closest stops.");
@@ -157,6 +198,7 @@ export default function App() {
         const mockLat = 28.8400;
         const mockLng = 78.7480;
         setUserLocation([mockLat, mockLng]);
+        setMapBounds(null);
         setMapCenter([mockLat, mockLng]);
         setMapZoom(14);
 
@@ -165,6 +207,14 @@ export default function App() {
           .then(data => {
             setNearestStops(data);
             setIsLocating(false);
+
+            if (data.length > 0) {
+              const bounds = [
+                [mockLat, mockLng],
+                ...data.map(stop => [stop.location.coordinates[1], stop.location.coordinates[0]])
+              ];
+              setMapBounds(bounds);
+            }
           })
           .catch(err => {
             console.error("Mock fetch failed:", err);
@@ -207,6 +257,7 @@ export default function App() {
       // Pan the map to the start city coordinates
       const startCity = masterStops.find(c => c.stopId === simFromCity);
       if (startCity) {
+        setMapBounds(null);
         setMapCenter([startCity.coordinates[1], startCity.coordinates[0]]);
         setMapZoom(11);
       }
@@ -300,32 +351,7 @@ export default function App() {
     });
   };
 
-  const getSimFromIcon = () => {
-    return L.divIcon({
-      className: 'custom-sim-from-marker',
-      html: `
-        <div class="relative flex items-center justify-center w-8 h-8 z-[1000]">
-          <span class="absolute inline-flex h-full w-full rounded-full bg-orange-500 opacity-75 animate-ping"></span>
-          <span class="relative inline-flex rounded-full h-4 w-4 bg-orange-500 border-2 border-white shadow-md"></span>
-        </div>
-      `,
-      iconSize: [32, 32],
-      iconAnchor: [16, 16]
-    });
-  };
-
-  const getSimToIcon = () => {
-    return L.divIcon({
-      className: 'custom-sim-to-marker',
-      html: `
-        <div class="relative flex items-center justify-center w-6 h-6 rounded-full bg-rose-600 border-2 border-white shadow-[0_0_10px_rgba(225,29,72,0.6)] z-[1000]">
-          <div class="w-2 h-2 rounded-full bg-white"></div>
-        </div>
-      `,
-      iconSize: [24, 24],
-      iconAnchor: [12, 12]
-    });
-  };
+  // Icons are defined outside the component to preserve animations
 
   const findNextStopForBus = (busCoordinates) => {
     if (!stops.length || !busCoordinates) return null;
@@ -450,20 +476,22 @@ export default function App() {
     return [incomingBuses[0]];
   }, [busesList, routeBounds, routeCoordinates]);
 
-  // Auto-frame map when a bus approaches
+  // Auto-frame map ONCE when a bus approaches a newly selected terminal
   useEffect(() => {
     if (filteredBuses.length > 0 && simFromCity) {
-      const nearestBus = filteredBuses[0];
-      const fromStop = masterStops.find(s => s.stopId === simFromCity);
-      
-      if (fromStop && nearestBus.busNumber !== lastFramedBusRef.current) {
-        lastFramedBusRef.current = nearestBus.busNumber;
-        const busLatLng = [nearestBus.location[1], nearestBus.location[0]];
-        const stopLatLng = [fromStop.coordinates[1], fromStop.coordinates[0]];
-        setMapBounds([busLatLng, stopLatLng]);
+      if (simFromCity !== lastFramedCityRef.current) {
+        lastFramedCityRef.current = simFromCity;
+        const nearestBus = filteredBuses[0];
+        const fromStop = masterStops.find(s => s.stopId === simFromCity);
+        
+        if (fromStop) {
+          const busLatLng = [nearestBus.location[1], nearestBus.location[0]];
+          const stopLatLng = [fromStop.coordinates[1], fromStop.coordinates[0]];
+          setMapBounds([busLatLng, stopLatLng]);
+        }
       }
-    } else if (filteredBuses.length === 0) {
-      lastFramedBusRef.current = null;
+    } else if (!simFromCity) {
+      lastFramedCityRef.current = null;
     }
   }, [filteredBuses, simFromCity, masterStops]);
 
@@ -908,9 +936,9 @@ export default function App() {
 
             let stopIcon;
             if (stop.stopId === simFromCity) {
-              stopIcon = getSimFromIcon();
+              stopIcon = simFromIcon;
             } else if (stop.stopId === simToCity) {
-              stopIcon = getSimToIcon();
+              stopIcon = simToIcon;
             } else {
               stopIcon = getOfficialStopIcon(isHighlighted);
             }
@@ -924,6 +952,7 @@ export default function App() {
                   click: () => {
                     setSelectedStop(stop);
                     setSelectedBus(null);
+                    setMapBounds(null);
                     setMapCenter(stopLatLng);
                   }
                 }}
@@ -977,6 +1006,7 @@ export default function App() {
                     click: () => {
                       setSelectedBus(bus);
                       setSelectedStop(null);
+                      setMapBounds(null);
                       setMapCenter(busLatLng);
                     }
                   }}

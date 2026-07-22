@@ -14,15 +14,15 @@ export function initializeSimulationState() {
   const coordinates = routeData.coordinates;
   const stops = routeData.stops;
 
-  for (let i = 1; i <= 10; i++) {
+  // Generating 15 buses distributed evenly along the route for normal usage
+  for (let i = 1; i <= 15; i++) {
     const busNumber = `UP-21-AT-${1000 + i}`;
     const direction = i % 2 === 0 ? 1 : -1;
     const activeCoords = direction === 1 ? [...coordinates] : [...coordinates].reverse();
     
     // Spread their starting positions evenly across the highway
-    const startIndex = Math.floor((activeCoords.length / 10) * (i - 1));
-    
-    // Ordered segment stops
+    // Spread their starting positions evenly across the entire route length
+    const startIndex = Math.floor((activeCoords.length / 15) * (i - 1));
     const segmentStops = direction === 1 ? [...stops] : [...stops].reverse();
     
     const capacity = 40 + (i % 3) * 5; // 40, 45, 50
@@ -47,7 +47,8 @@ export function initializeSimulationState() {
       direction: direction,
       capacity: capacity,
       ticketsSold: ticketsSold,
-      passengerDestinations: passengerDestinations
+      passengerDestinations: passengerDestinations,
+      speed: Math.floor(Math.random() * 15) + 35 // Initial speed between 35 and 50 km/h
     };
   }
 }
@@ -103,7 +104,7 @@ export function startSimulator() {
           });
 
           if (upcomingStops.length > 0) {
-            const newBoarders = Math.floor(Math.random() * 12) + 2;
+            const newBoarders = Math.floor(Math.random() * 8) + 1; // slightly fewer boarders to keep it realistic
             console.log(`>> Boarded: ${newBoarders} new passengers`);
 
             for (let i = 0; i < newBoarders; i++) {
@@ -120,9 +121,10 @@ export function startSimulator() {
 
           state.ticketsSold = state.passengerDestinations.reduce((sum, pd) => sum + pd.count, 0);
         } else {
-          // Transit fluctuations
+          // Transit fluctuations for live demo effect (simulating someone booking/cancelling a ticket online while the bus is moving)
           if (Math.random() < 0.15 && state.passengerDestinations.length > 0) {
             const randomDest = state.passengerDestinations[Math.floor(Math.random() * state.passengerDestinations.length)];
+            // Only fluctuate by 1 seat at a time to prevent erratic jumping
             const seatsFluctuation = Math.random() < 0.5 ? -1 : 1;
             randomDest.count = Math.max(1, randomDest.count + seatsFluctuation);
             state.ticketsSold = state.passengerDestinations.reduce((sum, pd) => sum + pd.count, 0);
@@ -140,7 +142,21 @@ export function startSimulator() {
           crowdStatus = 'crowded';
         }
 
-        const speed = reachedStop ? 0 : Math.floor(Math.random() * 20) + 25;
+        // Smooth but active speed fluctuations
+        let speed = 0;
+        if (reachedStop) {
+          speed = 0;
+        } else {
+          if (state.speed === undefined) {
+            state.speed = Math.floor(Math.random() * 15) + 35;
+          }
+          // Fluctuate speed 40% of the time by +/- 1 to 3 km/h to make the dashboard look active
+          if (Math.random() < 0.40) {
+            const delta = (Math.floor(Math.random() * 3) + 1) * (Math.random() < 0.5 ? -1 : 1);
+            state.speed = Math.max(25, Math.min(60, state.speed + delta));
+          }
+          speed = state.speed;
+        }
 
           // 3. Update database coordinates
           await Vehicle.findOneAndUpdate(
@@ -226,7 +242,8 @@ export async function updateBusRoute(busNumber, fromStopId, toStopId, ticketsSol
     direction: 1,
     capacity: capacity,
     ticketsSold: ticketsSoldInput,
-    passengerDestinations
+    passengerDestinations,
+    speed: 35
   };
 
   const ratio = ticketsSoldInput / capacity;
