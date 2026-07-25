@@ -62,6 +62,7 @@ export default function App() {
   const [selectedStop, setSelectedStop] = useState(null);
   const [isLocating, setIsLocating] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
+  const [isSidebarOpen, setIsSidebarOpen] = useState(window.innerWidth >= 640);
 
   // Simulator Control Desk State
   const [simBusNumber, setSimBusNumber] = useState('UP-21-AT-1008');
@@ -261,6 +262,7 @@ export default function App() {
         setMapCenter([startCity.coordinates[1], startCity.coordinates[0]]);
         setMapZoom(11);
       }
+      setIsSidebarOpen(false);
 
       setTimeout(() => setSimMessage(''), 4000);
     } catch (err) {
@@ -498,22 +500,54 @@ export default function App() {
   return (
     <div className="relative flex h-screen w-screen overflow-hidden bg-slate-950 text-slate-100">
 
+      {/* Mobile Sidebar Overlay */}
+      {isSidebarOpen && (
+        <div 
+          className="fixed inset-0 bg-black/60 z-[990] sm:hidden backdrop-blur-sm transition-opacity duration-300"
+          onClick={() => setIsSidebarOpen(false)}
+        />
+      )}
+
+      {/* Menu Toggle Button */}
+      {!isSidebarOpen && (
+        <button 
+          onClick={() => setIsSidebarOpen(true)}
+          className="absolute top-4 left-4 z-[900] bg-slate-900/90 text-white p-3 rounded-xl shadow-lg border border-slate-700 backdrop-blur-md hover:bg-slate-800 transition-colors"
+          title="Open Sidebar"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-6 h-6">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
+          </svg>
+        </button>
+      )}
+
       {/* 1. Left Glassmorphic Sidebar (Traveler Facing) */}
-      <aside className="absolute left-0 top-0 z-[1000] h-full w-full sm:w-[380px] glass-panel p-5 flex flex-col justify-between shadow-2xl transition-all duration-300">
+      <aside className={`absolute left-0 top-0 z-[1000] h-full w-full sm:w-[380px] glass-panel p-5 flex flex-col justify-between shadow-2xl transition-transform duration-300 ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
         <div className="flex flex-col h-full overflow-hidden">
 
           {/* Header */}
-          <div className="border-b border-slate-800 pb-4 mb-4">
+          <div className="border-b border-slate-800 pb-4 mb-4 relative">
             <div className="flex items-center justify-between">
               <h1 className="text-xl font-bold bg-gradient-to-r from-emerald-400 to-cyan-400 bg-clip-text text-transparent">
                 ComeOn Bus
               </h1>
-              <span className="flex items-center gap-1.5 text-[10px] uppercase font-bold glass-badge px-2 py-0.5 rounded-full">
-                <span className={`h-2 w-2 rounded-full ${isConnected ? 'bg-emerald-500 animate-pulse' : 'bg-rose-500'}`}></span>
-                {isConnected ? 'Sync Active' : 'Disconnected'}
-              </span>
+              <div className="flex items-center gap-2">
+                <span className="flex items-center gap-1.5 text-[10px] uppercase font-bold glass-badge px-2 py-0.5 rounded-full">
+                  <span className={`h-2 w-2 rounded-full ${isConnected ? 'bg-emerald-500 animate-pulse' : 'bg-rose-500'}`}></span>
+                  {isConnected ? 'Sync Active' : 'Disconnected'}
+                </span>
+                <button 
+                  onClick={() => setIsSidebarOpen(false)}
+                  className="text-slate-400 hover:text-white bg-slate-800/50 p-1.5 rounded-lg transition-colors"
+                  title="Close Sidebar"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
             </div>
-            <p className="text-[11px] text-slate-400 mt-1">
+            <p className="text-[11px] text-slate-400 mt-1 pr-8">
               Conductor integrated ticket & seat forecasting engine.
             </p>
           </div>
@@ -582,6 +616,7 @@ export default function App() {
                           setSelectedBus(null);
                           setMapCenter([stop.location.coordinates[1], stop.location.coordinates[0]]);
                           setMapZoom(15);
+                          setIsSidebarOpen(false);
                         }}
                         className={`p-3 rounded-xl cursor-pointer transition-all ${selectedStop?.stopId === stop.stopId
                             ? 'bg-slate-800 border border-emerald-500/50'
@@ -643,6 +678,7 @@ export default function App() {
                           setSelectedStop(null);
                           setMapCenter([bus.location[1], bus.location[0]]);
                           setMapZoom(12);
+                          setIsSidebarOpen(false);
                         }}
                         className={`p-3 rounded-xl cursor-pointer transition-all ${isBusSelected
                             ? 'bg-slate-800 border border-cyan-500/50'
