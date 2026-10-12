@@ -1,34 +1,34 @@
-import React from 'react';
 import * as turf from '@turf/turf';
+import { useDispatch, useSelector } from 'react-redux';
+import { selectTransitData } from '../../redux/transitSlice';
+import { selectMapState, setMapCenter, setMapZoom } from '../../redux/mapSlice';
+import {
+  selectUiState, setSelectedStop, setSelectedBus,
+  setSidebarOpen, setSimFromCity, setSimToCity
+} from '../../redux/uiSlice';
 
 export function SidebarContainer({
-  isSidebarOpen,
-  setIsSidebarOpen,
-  isConnected,
-  errorMessage,
-  isLocating,
   handleFindNearestStops,
-  nearestStops,
-  userLocation,
-  setSelectedStop,
-  setSelectedBus,
-  setMapCenter,
-  setMapZoom,
-  selectedStop,
   filteredBuses,
-  selectedBus,
   renderCrowdBadge,
   findNextStopForBus,
   calculateETA,
-  getStopFriendlyName,
-  simFromCity,
-  setSimFromCity,
-  simToCity,
-  setSimToCity,
-  masterStops
+  getStopFriendlyName
 }) {
+  const dispatch = useDispatch();
+  const { isConnected, errorMessage, masterStops } = useSelector(selectTransitData);
+  const { nearestStops, userLocation, isLocating } = useSelector(selectMapState);
+  const { isSidebarOpen, selectedStop, selectedBus, simFromCity, simToCity } = useSelector(selectUiState);
+  const setIsSidebarOpen = value => dispatch(setSidebarOpen(value));
+  const updateSelectedStop = value => dispatch(setSelectedStop(value));
+  const updateSelectedBus = value => dispatch(setSelectedBus(value));
+  const updateMapCenter = value => dispatch(setMapCenter(value));
+  const updateMapZoom = value => dispatch(setMapZoom(value));
+  const updateSimFromCity = value => dispatch(setSimFromCity(value));
+  const updateSimToCity = value => dispatch(setSimToCity(value));
+
   return (
-    <aside className={`absolute left-0 top-0 z-[1000] h-full w-full sm:w-[380px] glass-panel p-5 flex flex-col justify-between shadow-2xl transition-transform duration-300 ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+    <aside className={`absolute left-0 top-0 z-[1000] h-full w-full sm:w-[380px] border-r border-white/10 bg-slate-900/70 p-5 flex flex-col justify-between shadow-2xl backdrop-blur-xl transition-transform duration-300 ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
       <div className="flex flex-col h-full overflow-hidden">
         {/* Header */}
         <div className="border-b border-slate-800 pb-4 mb-4 relative">
@@ -37,7 +37,7 @@ export function SidebarContainer({
               ComeOn Bus
             </h1>
             <div className="flex items-center gap-2">
-              <span className="flex items-center gap-1.5 text-[10px] uppercase font-bold glass-badge px-2 py-0.5 rounded-full">
+              <span className="flex items-center gap-1.5 rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-[10px] uppercase font-bold backdrop-blur-sm">
                 <span className={`h-2 w-2 rounded-full ${isConnected ? 'bg-emerald-500 animate-pulse' : 'bg-rose-500'}`}></span>
                 {isConnected ? 'Sync Active' : 'Disconnected'}
               </span>
@@ -116,15 +116,15 @@ export function SidebarContainer({
                     <div
                       key={stop.stopId}
                       onClick={() => {
-                        setSelectedStop(stop);
-                        setSelectedBus(null);
-                        setMapCenter([stop.location.coordinates[1], stop.location.coordinates[0]]);
-                        setMapZoom(15);
+                        updateSelectedStop(stop);
+                        updateSelectedBus(null);
+                        updateMapCenter([stop.location.coordinates[1], stop.location.coordinates[0]]);
+                        updateMapZoom(15);
                         setIsSidebarOpen(false);
                       }}
                       className={`p-3 rounded-xl cursor-pointer transition-all ${selectedStop?.stopId === stop.stopId
                           ? 'bg-slate-800 border border-emerald-500/50'
-                          : 'glass-card border border-slate-800'
+                          : 'border border-white/5 bg-slate-800/40 hover:-translate-y-0.5 hover:border-white/10 hover:bg-slate-800/60 hover:shadow-lg hover:shadow-black/10'
                         }`}
                     >
                       <div className="flex justify-between items-start">
@@ -178,15 +178,15 @@ export function SidebarContainer({
                     <div
                       key={bus.busNumber}
                       onClick={() => {
-                        setSelectedBus(bus);
-                        setSelectedStop(null);
-                        setMapCenter([bus.location[1], bus.location[0]]);
-                        setMapZoom(12);
+                        updateSelectedBus(bus);
+                        updateSelectedStop(null);
+                        updateMapCenter([bus.location[1], bus.location[0]]);
+                        updateMapZoom(12);
                         setIsSidebarOpen(false);
                       }}
                       className={`p-3 rounded-xl cursor-pointer transition-all ${isBusSelected
                           ? 'bg-slate-800 border border-cyan-500/50'
-                          : 'glass-card border border-slate-800'
+                          : 'border border-white/5 bg-slate-800/40 hover:-translate-y-0.5 hover:border-white/10 hover:bg-slate-800/60 hover:shadow-lg hover:shadow-black/10'
                         }`}
                     >
                       <div className="flex justify-between items-start">
@@ -230,7 +230,7 @@ export function SidebarContainer({
           <div className="border-t border-slate-800 pt-4 mt-4 bg-slate-900/80 rounded-xl p-3 border border-slate-800">
             <div className="relative">
               <button
-                onClick={() => setSelectedBus(null)}
+                onClick={() => updateSelectedBus(null)}
                 className="absolute right-0 top-0 text-slate-400 hover:text-white"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
@@ -296,7 +296,7 @@ export function SidebarContainer({
           <div className="border-t border-slate-800 pt-4 mt-4 bg-slate-950/80 rounded-xl p-3 border border-slate-800">
             <div className="relative">
               <button
-                onClick={() => setSelectedStop(null)}
+                onClick={() => updateSelectedStop(null)}
                 className="absolute right-0 top-0 text-slate-400 hover:text-white"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
@@ -358,7 +358,7 @@ export function SidebarContainer({
               <label className="text-[10px] text-slate-400 font-bold block">From Terminal</label>
               <select
                 value={simFromCity}
-                onChange={(e) => setSimFromCity(e.target.value)}
+                onChange={(e) => updateSimFromCity(e.target.value)}
                 className="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-xs text-white focus:outline-none focus:border-cyan-500/50"
               >
                 {masterStops.filter(s => s.isOfficial).map(city => (
@@ -372,8 +372,8 @@ export function SidebarContainer({
               <button 
                 onClick={() => {
                   const temp = simFromCity;
-                  setSimFromCity(simToCity);
-                  setSimToCity(temp);
+                  updateSimFromCity(simToCity);
+                  updateSimToCity(temp);
                 }}
                 className="bg-slate-800 hover:bg-cyan-900 text-cyan-400 p-1.5 rounded-full border border-slate-700 shadow-lg transition-colors active:scale-90"
                 title="Swap Terminals"
@@ -388,7 +388,7 @@ export function SidebarContainer({
               <label className="text-[10px] text-slate-400 font-bold block">To Terminal</label>
               <select
                 value={simToCity}
-                onChange={(e) => setSimToCity(e.target.value)}
+                onChange={(e) => updateSimToCity(e.target.value)}
                 className="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-xs text-white focus:outline-none focus:border-cyan-500/50"
               >
                 {masterStops.filter(s => s.isOfficial).map(city => (

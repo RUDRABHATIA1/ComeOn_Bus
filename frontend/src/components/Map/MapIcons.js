@@ -2,7 +2,7 @@ import L from 'leaflet';
 
 export const getSimFromIcon = () => {
   return L.divIcon({
-    className: 'custom-sim-from-marker',
+    className: 'transition-transform duration-[3000ms] ease-linear',
     html: `
       <div class="relative flex items-center justify-center w-8 h-8">
         <span class="absolute inline-flex h-full w-full rounded-full bg-orange-500 opacity-75 animate-ping" style="animation-duration: 1.5s;"></span>
@@ -16,7 +16,7 @@ export const getSimFromIcon = () => {
 
 export const getSimToIcon = () => {
   return L.divIcon({
-    className: 'custom-sim-to-marker',
+    className: 'transition-transform duration-[3000ms] ease-linear',
     html: `
       <div class="relative flex items-center justify-center w-6 h-6 rounded-full bg-rose-600 border-2 border-white shadow-[0_0_10px_rgba(225,29,72,0.6)]">
         <div class="w-2 h-2 rounded-full bg-white"></div>
@@ -46,7 +46,7 @@ export const getBusIcon = (crowdStatus, ticketsSold, capacity, isSelected) => {
   const seatIndicator = capacity >= ticketsSold ? `${capacity - ticketsSold}` : `+${ticketsSold - capacity}`;
 
   return L.divIcon({
-    className: 'custom-bus-marker',
+    className: 'transition-transform duration-[3000ms] ease-linear',
     html: `
       <div class="relative flex items-center justify-center w-10 h-10 rounded-full shadow-2xl transition-all duration-300 ${colorClass} ${ringClass} ${selectedStyle}">
         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-5 h-5 text-white">
@@ -63,9 +63,15 @@ export const getBusIcon = (crowdStatus, ticketsSold, capacity, isSelected) => {
 };
 
 export const getUnofficialStopIcon = (isHighlighted) => {
+  const colorClass = isHighlighted ? 'bg-emerald-500 shadow-emerald-500/80' : 'bg-amber-500 shadow-amber-500/80';
   return L.divIcon({
-    className: 'custom-stop-marker',
-    html: `<div class="${isHighlighted ? 'custom-pulse-green' : 'custom-pulse-amber'}"></div>`,
+    className: 'transition-transform duration-[3000ms] ease-linear',
+    html: `
+      <div class="relative flex items-center justify-center w-5 h-5">
+        <span class="absolute inline-flex h-3.5 w-3.5 rounded-full border-2 border-white ${colorClass} animate-ping"></span>
+        <span class="relative inline-flex h-3.5 w-3.5 rounded-full border-2 border-white ${colorClass} shadow-lg"></span>
+      </div>
+    `,
     iconSize: [20, 20],
     iconAnchor: [10, 10]
   });
@@ -74,7 +80,7 @@ export const getUnofficialStopIcon = (isHighlighted) => {
 export const getOfficialStopIcon = (isHighlighted) => {
   const bgClass = isHighlighted ? 'bg-emerald-500 shadow-emerald-500/50' : 'bg-blue-600 shadow-blue-500/50';
   return L.divIcon({
-    className: 'custom-stop-marker-official',
+    className: 'transition-transform duration-[3000ms] ease-linear',
     html: `
       <div class="relative flex items-center justify-center w-5 h-5 rounded-full ${bgClass} shadow-lg border border-white">
         <div class="w-1.5 h-1.5 rounded-full bg-white"></div>

@@ -1,11 +1,15 @@
-import React from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import { selectUiState, setSidebarOpen } from '../../redux/uiSlice';
 
-export function MenuToggleButton({ isSidebarOpen, setIsSidebarOpen }) {
+export function MenuToggleButton() {
+  const dispatch = useDispatch();
+  const { isSidebarOpen } = useSelector(selectUiState);
+
   if (isSidebarOpen) return null;
 
   return (
     <button 
-      onClick={() => setIsSidebarOpen(true)}
+      onClick={() => dispatch(setSidebarOpen(true))}
       className="absolute top-4 left-4 z-[900] bg-slate-900/90 text-white p-3 rounded-xl shadow-lg border border-slate-700 backdrop-blur-md hover:bg-slate-800 transition-colors"
       title="Open Sidebar"
     >

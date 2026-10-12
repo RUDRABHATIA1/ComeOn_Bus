@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap } from 'react-leaflet';
 import L from 'leaflet';
-import { getSimFromIcon, getSimToIcon, getOfficialStopIcon, getBusIcon } from './MapIcons';
+import { getOfficialStopIcon, getBusIcon } from './MapIcons';
 
 function MapController({ center, zoom, bounds }) {
   const map = useMap();
@@ -38,24 +38,23 @@ export function LiveMap({
   renderCrowdBadge
 }) {
   return (
-    <main className="flex-1 h-full w-full relative z-[10]">
-      <MapContainer center={mapCenter} zoom={mapZoom} className="h-full w-full" zoomControl={false}>
+    <main className="relative z-10 h-full w-full flex-1">
+      <MapContainer center={mapCenter} zoom={mapZoom} className="h-full w-full bg-[#090d16] font-sans [&_.leaflet-bar]:border-0 [&_.leaflet-bar]:shadow-lg [&_.leaflet-bar_a]:border [&_.leaflet-bar_a]:border-white/10 [&_.leaflet-bar_a]:bg-slate-900/85 [&_.leaflet-bar_a]:text-slate-100 [&_.leaflet-bar_a]:backdrop-blur-md [&_.leaflet-bar_a:hover]:bg-slate-800/95 [&_.leaflet-bar_a:hover]:text-emerald-400 [&_.leaflet-popup-content-wrapper]:rounded-xl [&_.leaflet-popup-content-wrapper]:border [&_.leaflet-popup-content-wrapper]:border-white/10 [&_.leaflet-popup-content-wrapper]:bg-slate-900/95 [&_.leaflet-popup-content-wrapper]:text-slate-100 [&_.leaflet-popup-content-wrapper]:shadow-2xl [&_.leaflet-popup-tip]:border [&_.leaflet-popup-tip]:border-white/10 [&_.leaflet-popup-tip]:bg-slate-900/95 [&_.leaflet-marker-icon]:transition-transform [&_.leaflet-marker-icon]:duration-3000 [&_.leaflet-marker-icon]:ease-linear" zoomControl={false}>
         <TileLayer
-          attribution='&copy; <a href="https://carto.com/">CartoDB</a>'
-          url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
 
         <MapController center={mapCenter} zoom={mapZoom} bounds={mapBounds} />
 
-        {/* Draw Highlighted OSRM Real Road Polyline (Dotted) */}
+        {/* Draw Highlighted OSRM Real Road Polyline (Solid Glowing Line) */}
         {highlightedRoad.length > 0 && (
           <Polyline
             positions={highlightedRoad}
             color="#06b6d4"
-            weight={4}
-            opacity={0.8}
-            dashArray="6, 12"
-            className="drop-shadow-lg"
+            weight={6}
+            opacity={0.9}
+            className="glow-path"
           />
         )}
 
@@ -64,7 +63,7 @@ export function LiveMap({
           <Marker
             position={userLocation}
             icon={L.divIcon({
-              className: 'custom-user-marker',
+              className: 'transition-transform duration-[3000ms] ease-linear',
               html: `
                 <div class="relative flex items-center justify-center w-8 h-8">
                   <span class="absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-60 animate-ping"></span>
@@ -148,10 +147,10 @@ export function LiveMap({
                     Math.max(bus.busCoordIdx, routeBounds.fromCoordIdx) + 1
                   )}
                   color="#ef4444"
-                  weight={3}
-                  dashArray="5, 10"
-                  opacity={0.6}
-                  className="drop-shadow-lg"
+                  weight={5}
+                  dashArray="10, 10"
+                  opacity={0.9}
+                  className="glow-path-red"
                 />
               )}
 
@@ -168,7 +167,7 @@ export function LiveMap({
                 }}
               >
                 <Popup>
-                  <div className="p-2.5 space-y-2 text-slate-100 text-xs min-w-[180px]">
+                  <div className="min-w-45 p-2.5 space-y-2 text-slate-100 text-xs">
                     <div className="flex justify-between items-start">
                       <span className="font-bold text-white text-sm">{bus.busNumber}</span>
                       <span className="text-[9px] font-bold text-slate-400 uppercase">Live</span>
